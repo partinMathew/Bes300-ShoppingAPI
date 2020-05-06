@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ShoppingApi.Data;
+using ShoppingApi.Hubs;
 using ShoppingApi.Mappers;
 using ShoppingApi.Services;
 
@@ -30,6 +31,19 @@ namespace ShoppingApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors(options =>
+                options.AddPolicy("CorsPolicy", builder => 
+                    builder.WithOrigins("http://localhost:4200")
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials()
+                )
+            );
+            services.AddSignalR().AddJsonProtocol(options =>
+            {
+                options.PayloadSerializerOptions.IgnoreNullValues = true;
+                options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            });
             services.AddControllers().AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.IgnoreNullValues = true;
@@ -59,7 +73,7 @@ namespace ShoppingApi
             {
                 app.UseDeveloperExceptionPage();
             }
-
+            app.UseCors("CorsPolicy");
             app.UseRouting();
 
             app.UseAuthorization();
@@ -67,6 +81,7 @@ namespace ShoppingApi
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapHub<CurbsideHub>("curbsidehub");
             });
         }
     }
